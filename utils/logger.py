@@ -7,7 +7,7 @@ def setup_logger():
     logger.setLevel(logging.INFO)
     
     # Create file handler
-    log_filename = f"logs/trades_test.log"
+    log_filename = f"logs/trades.log"
     fh = logging.FileHandler(log_filename)
     fh.setLevel(logging.INFO)
     
