@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  trading-bot:
+    build: .
+    container_name: live-trading-bot
+    volumes:
+      - ./logs/:/app/*.log
+      - ./.env:/app/.env
+      - ./logs/:/app/logs/
+    environment:
+      - TZ=UTC
+    restart: unless-stopped
