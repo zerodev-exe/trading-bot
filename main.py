@@ -1,121 +1,112 @@
 from datetime import datetime, timedelta
-from utils.data import Stock, TradingBot
+import time
+from utils.data import TradingBot
 from utils.stocks import return_stock_data
-import matplotlib.pyplot as plt
+from utils.logger import setup_logger
 
+def run_live_trading(initial_balance=10000.0, days: int = 30, trade_interval: str = "1d"):
+    # Setup logger
+    logger = setup_logger()
+    logger.info("Starting Live Trading Bot")
 
-def run_simulation(money: float = 10000.0, start_date: str = "2022-01-01", end_date: str = "2024-12-31", trade_interval: str = "1h"):
-    total_profit = 0
-    total_roi = 0
-    profitable_simulations = 0
-    all_results = []
+    # Get initial stock data
+    current_time = datetime.now()
+    STOCK_DATA, STOCKS = return_stock_data(
+        start_date=(current_time - timedelta(days=days)).strftime('%Y-%m-%d'),
+        end_date=current_time.strftime('%Y-%m-%d'),
+        trade_interval=trade_interval
+    )
+    # Initialize trading bot
+    bot = TradingBot(initial_balance)
 
-    # Track best and worst simulations
-    best_profit = float('-inf')
-    worst_profit = float('inf')
-    
-    print(f"Running the simulation...")
-    
-    bot = TradingBot(money)
-
-    # Simple moving average strategy
-    def should_buy(stock: Stock) -> bool:
-        if len(stock.history) < 20:  # Increased window for more stability
-            return False
-        current_price = stock.price
-        avg_price = sum(stock.history[-20:]) / 20
-        return current_price < avg_price * 0.90  # Buy when price is 2% below MA
-
-    def should_sell(stock: Stock) -> bool:
+    # Simple moving average strategy (copied from simulation)
+    def should_buy(stock):
         if len(stock.history) < 20:
             return False
         current_price = stock.price
         avg_price = sum(stock.history[-20:]) / 20
-        return current_price > avg_price * 1.10  # Sell when price is 2% above MA
+        return current_price < avg_price * 0.98
 
-    # Run simulation
-    start_datetime = datetime.strptime(start_date, "%Y-%m-%d")
-    trading_days = len(next(iter(STOCK_DATA.values())))
+    def should_sell(stock):
+        if len(stock.history) < 20:
+            return False
+        current_price = stock.price
+        avg_price = sum(stock.history[-20:]) / 20
+        return current_price > avg_price * 1.02
 
-    for day in range(trading_days):
-        current_date = start_datetime + timedelta(days=day)
-
-        # Update stock prices
+    # Make initial trading decisions based on historical data
+    def make_initial_trades():
+        logger.info("Making initial trading decisions...")
         for symbol, stock in STOCKS.items():
-            stock.update_price(current_date)
+            if len(stock.history) >= 20:
+                avg_price = sum(stock.history[-20:]) / 20
+                logger.info(f"{symbol} - Initial Price: ${stock.price:.2f}, MA20: ${avg_price:.2f}")
+                
+                # Calculate potential position size (10% of portfolio per trade)
+                shares_to_trade = int(bot.balance * 0.1 / stock.price)
+                
+                if stock.price < avg_price * 0.98:  # Price is below average - potential buy
+                    if shares_to_trade > 0:
+                        logger.info(f"Initial Buy Signal - Attempting to buy {shares_to_trade} shares of {symbol}")
+                        if bot.buy(stock, shares_to_trade):
+                            bot.log_trade(logger, "INITIAL BUY", stock, shares_to_trade, stock.price)
+                
+                elif stock.price > avg_price * 1.02:  # Price is above average - potential short
+                    logger.info(f"Initial Sell Signal - No position to sell for {symbol}")
 
-        # Make trading decisions
-        for symbol, stock in STOCKS.items():
-            if should_buy(stock):
-                shares_to_buy = int(bot.balance * 0.1 / stock.price)
-                if shares_to_buy > 0:
-                    bot.buy(stock, shares_to_buy)
-            elif should_sell(stock):
-                shares_to_sell = bot.portfolio.get(symbol, 0)
-                if shares_to_sell > 0:
-                    bot.sell(stock, shares_to_sell)
+    # Execute initial trades
+    make_initial_trades()
 
-        portfolio_value = bot.get_portfolio_value(STOCKS)
-        bot.portfolio_history.append(portfolio_value)
-        bot.portfolio_dates.append(current_date)
+    # Log initial stock data
+    logger.info("Initial Stock Data:")
+    for symbol, stock in STOCKS.items():
+        logger.info(f"{symbol}: ${stock.price:.2f} - History length: {len(stock.history)} - Last 5 prices: {stock.history[-5:] if len(stock.history) >= 5 else stock.history}")
 
-    # Calculate results for this simulation
-    final_portfolio_value = bot.get_portfolio_value(STOCKS)
-    sim_profit = final_portfolio_value - bot.initial_balance
-    sim_roi = (sim_profit / bot.initial_balance) * 100
+    try:
+        while True:
+            current_time = datetime.now()
+            
+            # Update stock data
+            STOCK_DATA, STOCKS = return_stock_data(
+                start_date=(current_time - timedelta(days=days)).strftime('%Y-%m-%d'),
+                end_date=current_time.strftime('%Y-%m-%d'),
+                trade_interval=trade_interval
+            )
 
-    # Track best and worst results
-    if sim_profit >= best_profit:
-        best_profit = sim_profit
+            # Make trading decisions
+            for symbol, stock in STOCKS.items():
+                # Log current stock price and moving average
+                if len(stock.history) >= 20:
+                    avg_price = sum(stock.history[-20:]) / 20
+                    logger.info(f"{symbol} - Current: ${stock.price:.2f}, MA20: ${avg_price:.2f}")
 
-    if sim_profit <= worst_profit:
-        worst_profit = sim_profit
+                if should_buy(stock):
+                    shares_to_buy = int(bot.balance * 0.1 / stock.price)
+                    logger.info(f"Attempting to buy {shares_to_buy} shares of {symbol}")
+                    if shares_to_buy > 0:
+                        if bot.buy(stock, shares_to_buy):
+                            bot.log_trade(logger, "BUY", stock, shares_to_buy, stock.price)
 
-    total_profit += sim_profit
-    total_roi += sim_roi
-    if sim_profit > 0:
-        profitable_simulations += 1
+                elif should_sell(stock):
+                    shares_to_sell = bot.portfolio.get(symbol, 0)
+                    if shares_to_sell > 0:
+                        logger.info(f"Attempting to sell {shares_to_sell} shares of {symbol}")
+                        if bot.sell(stock, shares_to_sell):
+                            bot.log_trade(logger, "SELL", stock, shares_to_sell, stock.price)
 
-    all_results.append(sim_roi)
+            # Log portfolio status
+            bot.log_portfolio_status(logger, STOCKS)
 
-    # Calculate statistics
-    avg_profit = total_profit
-    avg_roi = total_roi
-    roi_std = (sum((x - avg_roi) ** 2 for x in all_results)) ** 0.5
+            # Wait for 60 seconds before next check
+            time.sleep(60)
 
-    # Calculate average trades per simulation
-    avg_trades = bot.total_trades
-
-    print("\nSimulation Results:")
-    print(f"Period: {start_date} to {end_date}")
-    print(f"Stonks: ${avg_profit:,.2f}")
-    print(f"Average ROI: {avg_roi:.1f}%")
-    print(f"ROI Standard Deviation: {roi_std:.1f}%")
-    print(f"Trades per Simulation: {avg_trades:.1f}")
-    print(f"Total Trades Across All Simulations: {bot.total_trades:,}")
-
-    plt.figure(figsize=(12, 6))
-    plt.plot(bot.portfolio_dates, bot.portfolio_history, label='Portfolio Value')
-    plt.title('Portfolio Value Over Time')
-    plt.xlabel('Date')
-    plt.ylabel('Portfolio Value ($)')
-    plt.grid(True)
-    plt.legend()
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-    plt.show()
+    except KeyboardInterrupt:
+        logger.info("Trading bot stopped by user")
+    except Exception as e:
+        logger.error(f"Error occurred: {str(e)}")
+    finally:
+        logger.info("Final Portfolio Status:")
+        bot.log_portfolio_status(logger, STOCKS)
 
 if __name__ == "__main__":
-    money = 10000
-    start_date = "2024-01-01"
-    end_date = "2025-01-07"
-    trade_interval = "1d"
-
-    STOCK_DATA, STOCKS = return_stock_data(start_date=start_date, end_date=end_date, trade_interval=trade_interval)
-    run_simulation(
-        money=money,
-        start_date=start_date,
-        end_date=end_date,
-        trade_interval=trade_interval
-    )
-    # calculate_perfect_trades(STOCKS, money)
+    run_live_trading(initial_balance=5000.0, days=45, trade_interval="1d")

@@ -5,7 +5,6 @@ services:
     build: .
     container_name: live-trading-bot
     volumes:
-      - ./logs/:/app/*.log
       - ./.env:/app/.env
       - ./logs/:/app/logs/
       - ./:/app/
