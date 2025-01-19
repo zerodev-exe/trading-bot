@@ -86,18 +86,45 @@ if __name__ == "__main__":
     # Fetch real historical data for Tesla (TSLA)
     end_date = datetime.now()
     start_date = end_date - timedelta(days=365)  # Get 1 year of data
-    
-    stock = yf.Ticker("TSLA")
-    historical_data = stock.history(start=start_date, end=end_date)
-    
-    # Initialize and train the model
-    trader = StockTradingML()
-    accuracy = trader.train(historical_data)
-    print(f"Model accuracy: {accuracy:.2f}")
-    
-    # Make prediction for the most recent data
-    decision = trader.predict(historical_data)
-    latest_price = historical_data['Close'].iloc[-1]
-    print(f"Latest stock price: ${latest_price:.2f}")
-    print(f"Trading decision: {['Hold', 'Buy', 'Sell'][int(decision)]}")
+
+    stocks_to_fetch = [
+        ("AAPL", "Apple"),
+        ("MSFT", "Microsoft"),
+        ("AMZN", "Amazon"),
+        ("GOOGL", "Alphabet"),
+        ("NVDA", "NVIDIA"),
+        ("META", "Meta Platforms"),
+        ("BRK-B", "Berkshire Hathaway"),
+        ("TSLA", "Tesla"),
+        ("LLY", "Eli Lilly"),
+        ("V", "Visa"),
+        ("UNH", "UnitedHealth"),
+        ("JPM", "JPMorgan Chase"),
+        ("JNJ", "Johnson & Johnson"),
+        ("XOM", "ExxonMobil"),
+        ("WMT", "Walmart"),
+        ("MA", "Mastercard"),
+        ("PG", "Procter & Gamble"),
+        ("HD", "Home Depot"),
+        ("CVX", "Chevron"),
+        ("AVGO", "Broadcom"),
+        ("QCOM", "Qualcom"),
+        ("PLTR", "Palantir"),
+        ("BITF", "Bitfarms")
+    ]
+
+    for tracker, _ in stocks_to_fetch:
+        stock = yf.Ticker(tracker)
+        historical_data = stock.history(start=start_date, end=end_date)
+        print("For " + tracker)
+        # Initialize and train the model
+        trader = StockTradingML()
+        accuracy = trader.train(historical_data)
+        print(f"Model accuracy: {accuracy:.2f}")
+
+        # Make prediction for the most recent data
+        decision = trader.predict(historical_data)
+        latest_price = historical_data['Close'].iloc[-1]
+        print(f"Latest stock price: ${latest_price:.2f}")
+        print(f"Trading decision: {['Hold', 'Buy', 'Sell'][int(decision)]}\n")
     
