@@ -43,6 +43,7 @@ def return_stock_data(start_date, end_date, trade_interval):
         "AVGO": get_stock_data("AVGO", start_date, end_date, trade_interval=trade_interval),  # Broadcom
         "QCOM": get_stock_data("QCOM", start_date, end_date, trade_interval=trade_interval),  # Qualcom
         "PLTR": get_stock_data("PLTR", start_date, end_date, trade_interval=trade_interval),  # Qualcom
+        "BITF": get_stock_data("BITF", start_date, end_date, trade_interval=trade_interval),  # Qualcom
     }
 
     # Initialize stocks with historical data
