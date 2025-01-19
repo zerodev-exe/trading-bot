@@ -1,6 +1,9 @@
 from typing import List, Dict
 import pandas as pd
 from datetime import datetime
+import json
+
+BOT_STATE = 'logs/bot_state.json'
 
 class Stock:
     def __init__(self, symbol: str, data: pd.DataFrame):
@@ -32,13 +35,42 @@ class TradingBot:
         self.portfolio_history: List[float] = [initial_balance]
         self.portfolio_dates: List[datetime] = [datetime.now()]
         self.total_trades = 0
+        self.load_state()   # Load bot state from backup
+
+    def save_state(self):
+        state = {
+            'balance': self.balance,
+            'portfolio': self.portfolio,
+            'total_trades': self.total_trades,
+            'portfolio_history': self.portfolio_history,
+            'portfolio_dates': [date.isoformat() for date in self.portfolio_dates],
+        }
+        with open(BOT_STATE, 'w') as f:
+            json.dump(state, f)
+
+    def load_state(self):
+        try:
+            with open(BOT_STATE, 'r') as f:
+                state = json.load(f)
+                self.balance = state.get('balance', self.initial_balance)
+                self.portfolio = state.get('portfolio', {})
+                self.total_trades = state.get('total_trades', 0)
+                self.portfolio_history = state.get('portfolio_history', [self.balance])
+                self.portfolio_dates = [datetime.fromisoformat(date) for date in state.get('portfolio_dates', [datetime.now().isoformat()])]
+        except (FileNotFoundError, ValueError, json.JSONDecodeError) as e:
+            print(f"Error loading state: {e}. Initializing with default values.")
+            self.portfolio = {}
+            self.portfolio_history = [self.balance]
+            self.portfolio_dates = [datetime.now()]
 
     def buy(self, stock: Stock, quantity: int) -> bool:
         cost = stock.price * quantity
         if cost <= self.balance:
             self.balance -= cost
             self.portfolio[stock.symbol] = self.portfolio.get(stock.symbol, 0) + quantity
-            self.trade_history.append(f"Bought {quantity} shares of {stock.symbol} at ${stock.price:.2f}")
+            trade_record = f"Bought {quantity} shares of {stock.symbol} at ${stock.price:.2f}"
+            self.trade_history.append(trade_record)
+            self.save_state()    # Save state after buying
             stock.buy_dates.append(stock.dates[-1])
             stock.buy_prices.append(stock.price)
             self.total_trades += 1
@@ -49,7 +81,9 @@ class TradingBot:
         if stock.symbol in self.portfolio and self.portfolio[stock.symbol] >= quantity:
             self.balance += stock.price * quantity
             self.portfolio[stock.symbol] -= quantity
-            self.trade_history.append(f"Sold {quantity} shares of {stock.symbol} at ${stock.price:.2f}")
+            trade_record = f"Sold {quantity} shares of {stock.symbol} at ${stock.price:.2f}"
+            self.trade_history.append(trade_record)
+            self.save_state()    # Save state after selling
             stock.sell_dates.append(stock.dates[-1])
             stock.sell_prices.append(stock.price)
             self.total_trades += 1
