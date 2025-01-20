@@ -11,7 +11,7 @@ def run_live_trading(initial_balance=10000.0, days: int = 30, trade_interval: st
 
     # Get initial stock data
     current_time = datetime.now()
-    STOCK_DATA, STOCKS = return_stock_data(
+    STOCKS = return_stock_data(
         start_date=(current_time - timedelta(days=days)).strftime('%Y-%m-%d'),
         end_date=current_time.strftime('%Y-%m-%d'),
         trade_interval=trade_interval
@@ -67,7 +67,7 @@ def run_live_trading(initial_balance=10000.0, days: int = 30, trade_interval: st
             current_time = datetime.now()
             
             # Update stock data
-            STOCK_DATA, STOCKS = return_stock_data(
+            STOCKS = return_stock_data(
                 start_date=(current_time - timedelta(days=days)).strftime('%Y-%m-%d'),
                 end_date=current_time.strftime('%Y-%m-%d'),
                 trade_interval=trade_interval
@@ -109,4 +109,4 @@ def run_live_trading(initial_balance=10000.0, days: int = 30, trade_interval: st
         bot.log_portfolio_status(logger, STOCKS)
 
 if __name__ == "__main__":
-    run_live_trading(initial_balance=5000.0, days=45, trade_interval="1d")
+    run_live_trading(initial_balance=7500.0, days=45, trade_interval="1d")

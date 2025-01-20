@@ -52,4 +52,4 @@ def return_stock_data(start_date, end_date, trade_interval):
         for symbol, data in STOCK_DATA.items()
     }
 
-    return STOCK_DATA, STOCKS
+    return STOCKS
