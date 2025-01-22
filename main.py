@@ -29,9 +29,6 @@ def run_live_trading(initial_balance=10000.0, days: int = 30, trade_interval: st
 
     # Log initial stock data
     logger.info("Initial Stock Data:")
-    STOCKS = return_stock_data(period, trade_interval)
-    for symbol, stock in STOCKS.items():
-        logger.info(f"{symbol}: ${stock.price:.2f} - History length: {len(stock.history)} - Last 5 prices: {stock.history[-5:] if len(stock.history) >= 5 else stock.history}")
 
     try:
         while True:
