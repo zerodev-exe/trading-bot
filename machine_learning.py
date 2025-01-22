@@ -10,6 +10,7 @@ class StockTradingML:
     def __init__(self):
         self.model = RandomForestClassifier(n_estimators=100, random_state=42)
         self.scaler = StandardScaler()
+        self.stocks_to_fetch = []  # Initialize an empty list for stocks
         
     def prepare_features(self, data):
         """Calculate technical indicators as features"""
@@ -83,37 +84,15 @@ class StockTradingML:
 
 # Example usage:
 if __name__ == "__main__":
-    # Fetch real historical data for Tesla (TSLA)
+    # Fetch real historical data for stocks from a CSV file
     end_date = datetime.now()
     start_date = end_date - timedelta(days=365)  # Get 1 year of data
 
-    stocks_to_fetch = [
-        ("AAPL", "Apple"),
-        ("MSFT", "Microsoft"),
-        ("AMZN", "Amazon"),
-        ("GOOGL", "Alphabet"),
-        ("NVDA", "NVIDIA"),
-        ("META", "Meta Platforms"),
-        ("BRK-B", "Berkshire Hathaway"),
-        ("TSLA", "Tesla"),
-        ("LLY", "Eli Lilly"),
-        ("V", "Visa"),
-        ("UNH", "UnitedHealth"),
-        ("JPM", "JPMorgan Chase"),
-        ("JNJ", "Johnson & Johnson"),
-        ("XOM", "ExxonMobil"),
-        ("WMT", "Walmart"),
-        ("MA", "Mastercard"),
-        ("PG", "Procter & Gamble"),
-        ("HD", "Home Depot"),
-        ("CVX", "Chevron"),
-        ("AVGO", "Broadcom"),
-        ("QCOM", "Qualcom"),
-        ("PLTR", "Palantir"),
-        ("BITF", "Bitfarms")
-    ]
+    # Read stock tickers from the first column of a CSV file
+    stocks_df = pd.read_csv('stocks.csv')  # Ensure the CSV file is in the same directory
+    stocks_to_fetch = stocks_df.iloc[:, 0].tolist()  # Get the first column as a list
 
-    for tracker, _ in stocks_to_fetch:
+    for tracker in stocks_to_fetch:
         stock = yf.Ticker(tracker)
         historical_data = stock.history(start=start_date, end=end_date)
         print("For " + tracker)
