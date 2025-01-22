@@ -20,14 +20,14 @@ def run_live_trading(initial_balance=10000.0, days: int = 30, trade_interval: st
     bot = TradingBot(initial_balance)
 
     # Simple moving average strategy (copied from simulation)
-    def should_buy(stock):
+    def should_buy(stock) -> bool:
         if len(stock.history) < 20:
             return False
         current_price = stock.price
         avg_price = sum(stock.history[-20:]) / 20
         return current_price < avg_price * 0.98
 
-    def should_sell(stock):
+    def should_sell(stock) -> bool:
         if len(stock.history) < 20:
             return False
         current_price = stock.price
