@@ -76,7 +76,7 @@ class TradingBot:
             self.total_trades += 1
             return True
         return False
-    
+
     def sell(self, stock: Stock, quantity: int) -> bool:
         if stock.symbol in self.portfolio and self.portfolio[stock.symbol] >= quantity:
             self.balance += stock.price * quantity
@@ -89,11 +89,14 @@ class TradingBot:
             self.total_trades += 1
             return True
         return False
-    
+
     def get_portfolio_value(self, stocks: Dict[str, Stock]) -> float:
         total = self.balance
         for symbol, quantity in self.portfolio.items():
-            total += stocks[symbol].price * quantity
+            if symbol in stocks:  # Check if the symbol exists in stocks
+                total += stocks[symbol].price * quantity
+            else:
+                print(f"Warning: {symbol} not found in stocks.")
         return total
 
     def log_portfolio_status(self, logger, stocks):
