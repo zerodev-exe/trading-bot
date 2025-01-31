@@ -47,6 +47,7 @@ class TradingBot:
         }
         with open(BOT_STATE, 'w') as f:
             json.dump(state, f)
+            f.flush()
 
     def load_state(self):
         try:
@@ -100,11 +101,16 @@ class TradingBot:
         return total
 
     def log_portfolio_status(self, logger, stocks):
+        # Refresh portfolio value before logging
+        portfolio_value = self.get_portfolio_value(stocks)
         logger.info(f"Current Balance: ${self.balance:.2f}")
         logger.info("Current Portfolio:")
         for symbol, quantity in self.portfolio.items():
-            logger.info(f"  {symbol}: {quantity} shares")
-        logger.info(f"Total Portfolio Value: ${self.get_portfolio_value(stocks):.2f}")
+            if quantity == 0:
+                continue
+            else:
+                logger.info(f"  {symbol}: {quantity} shares")
+        logger.info(f"Total Portfolio Value: ${portfolio_value}")
         logger.info("-" * 50)
 
     def log_trade(self, logger, action, stock, quantity, price):

@@ -1,14 +1,13 @@
-from datetime import datetime, timedelta
 import time
 from utils.data import TradingBot
 from utils.stocks import return_stock_data
 from utils.logger import setup_logger
 
-def run_live_trading(initial_balance=10000.0, days: int = 30, trade_interval: str = "1d"):
+def run_live_trading(initial_balance=10000.0, scan_period: int = 30, trade_interval: str = "1d"):
     # Setup logger
     logger = setup_logger()
     logger.info("Starting Live Trading Bot")
-
+    period = f"{scan_period}d"
     # Initialize trading bot
     bot = TradingBot(initial_balance)
 
@@ -27,17 +26,11 @@ def run_live_trading(initial_balance=10000.0, days: int = 30, trade_interval: st
         avg_price = sum(stock.history[-20:]) / 20
         return current_price > avg_price * 1.02
 
-    # Log initial stock data
-    logger.info("Initial Stock Data:")
-
     try:
         while True:
-            current_time = datetime.now()
-            
             # Update stock data
             STOCKS = return_stock_data(
-                start_date=(current_time - timedelta(days=days)).strftime('%Y-%m-%d'),
-                end_date=current_time.strftime('%Y-%m-%d'),
+                period=period,
                 trade_interval=trade_interval
             )
 
@@ -78,4 +71,4 @@ def run_live_trading(initial_balance=10000.0, days: int = 30, trade_interval: st
         bot.log_portfolio_status(logger, STOCKS)
 
 if __name__ == "__main__":
-    run_live_trading(initial_balance=5000.0, days=7, trade_interval="1m")
+    run_live_trading(initial_balance=5000.0, scan_period=8, trade_interval="1m")
