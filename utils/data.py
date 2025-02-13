@@ -110,7 +110,7 @@ class TradingBot:
                 continue
             else:
                 logger.info(f"  {symbol}: {quantity} shares")
-        logger.info(f"Total Portfolio Value: ${portfolio_value}")
+        logger.info(f"Total Portfolio Value: ${portfolio_value:.2f}")
         logger.info("-" * 50)
 
     def log_trade(self, logger, action, stock, quantity, price):
